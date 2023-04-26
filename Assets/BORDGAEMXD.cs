@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Text.RegularExpressions;
@@ -11,6 +12,7 @@ public class BORDGAEMXD : MonoBehaviour
 	public KMAudio Audio;
 
 	public KMSelectable[] yourHoles;
+	public KMSelectable[] theirHoles;
 	public GameObject[] seedsPlacement;
 	public GameObject[] pivot;
 	public Material[] colours;
@@ -23,7 +25,7 @@ public class BORDGAEMXD : MonoBehaviour
 	private int[] mostSeeds = new int[7];
 
 	private bool turn;
-	private bool codeLogging = true;
+	private bool codeLogging;
 
 	static int moduleIdCounter = 1;
 	int moduleId;
@@ -41,20 +43,51 @@ public class BORDGAEMXD : MonoBehaviour
 		{
 			int j = i;
 			yourHoles[j].OnInteract += () => { holeHandler(j); return false; };
-		}
-	}
 
-	void Start ()
+            yourHoles[i].OnHighlight += delegate ()
+            {
+                if (!moduleSolved)
+                {
+                    highlightText(j, true);
+                }
+            };
+
+            yourHoles[i].OnHighlightEnded += delegate ()
+            {
+                if (!moduleSolved)
+                {
+                    highlightText(j, false);
+                }
+            };
+        }
+        for (int i = 0; i < theirHoles.Length; i++)
+		{
+            int j = i;
+            theirHoles[i].OnHighlight += delegate ()
+            {
+                if (!moduleSolved)
+                {
+                    highlightText(j + 8, true);
+                }
+            };
+
+            theirHoles[i].OnHighlightEnded += delegate ()
+            {
+                if (!moduleSolved)
+                {
+                    highlightText(j + 8, false);
+                }
+            };
+        }
+    }
+
+    void Start ()
 	{
-		distribute();
+        screenText.text = "";
+        distribute();
 		logArray(seeds, "Initial state:");
 		Array.Copy(getTheMost(), mostSeeds, mostSeeds.Length);
 		logArray(mostSeeds, "Total points after playing each hole:");
-		/*/Debug.LogFormat("The maximum seeds in a hole is: " +
-					mostSeeds.Max() +
-				  ", which is in the hole: " +
-					(Array.IndexOf(mostSeeds, mostSeeds.Max()) + 1) +
-				  ".");/*/
 		Debug.LogFormat("[Congkak #{0}] The maximum seeds in a hole is: {1}, which is in the hole: {2}.", moduleId, mostSeeds.Max(), ((Array.IndexOf(mostSeeds, mostSeeds.Max())) + 1));
 	}
 
@@ -88,43 +121,49 @@ public class BORDGAEMXD : MonoBehaviour
 		positionSeeds();
 	}
 
-    void positionSeeds ()
+    void positionSeeds()
     {
-		redo:
-		float sphereRadius = 4.2f;
-		float seedRadius = .5f * .002f;
-		float circleRadius = sphereRadius * (2 / 3f);
-		int seedCount = 0;
-		Vector3 posToCheck;
-		Collider[] hitColliders = new Collider[1];
-		for (int k = 0, s = 0; k < 16; k++)
-		{
-			var cupPos = pivot[k].transform;
-			bool seedDiff = k % 8 == 7;
-			for (int l = 0; l < seeds[k]; l++, s++)
-			{
-				var seed = seedsPlacement[seedCount++].transform;
-				seed.parent = cupPos;
-				int ct = 0;
-				do
-				{
-					ct++;
-					if (ct == 1000)
-						goto redo;
-					var randLoc = UnityEngine.Random.insideUnitCircle * circleRadius;
-					float xDiff = (randLoc.x * randLoc.x);
-					float yDiff = (randLoc.y * randLoc.y);
-					if (seedDiff) { xDiff /= 1.5f * 1.5f; yDiff /= 1.95f * 1.95f; }
-					float sqr = ((sphereRadius * sphereRadius) - xDiff - yDiff);
-					float resultZ = -Mathf.Sqrt(Mathf.Abs(sqr));
-					posToCheck = new Vector3(randLoc.x, resultZ + seedRadius, randLoc.y);
-				} while (Physics.OverlapSphereNonAlloc(cupPos.TransformPoint(posToCheck), seedRadius / 2, hitColliders, 1 << 15) > 0);
-				seed.localPosition = posToCheck;
-			}
-		}
-	}
+        float sphereRadius = 4.2f;
+        float seedRadius = .5f * .002f;
+        float circleRadius = sphereRadius * (2 / 3f);
+        int seedCount = 0;
+        Vector3 posToCheck;
+        List<SphereCollider> placedColliders;
+        for (int k = 0; k < 16; k++)
+        {
+            placedColliders = new List<SphereCollider>();
+            var cupPos = pivot[k].transform;
+            bool seedDiff = k % 8 == 7;
+            for (int l = 0; l < seeds[k]; l++)
+            {
+                var seed = seedsPlacement[seedCount++].transform;
+                seed.parent = cupPos;
+            redo:
+                var randLoc = UnityEngine.Random.insideUnitCircle * circleRadius;
+                float xDiff = (randLoc.x * randLoc.x);
+                float yDiff = (randLoc.y * randLoc.y);
+                if (seedDiff) { xDiff /= 1.5f * 1.5f; yDiff /= 1.95f * 1.95f; }
+                float sqr = ((sphereRadius * sphereRadius) - xDiff - yDiff);
+                float resultZ = -Mathf.Sqrt(Mathf.Abs(sqr));
+                posToCheck = new Vector3(randLoc.x, resultZ + seedRadius, randLoc.y);
+                seed.localPosition = posToCheck;
+                for (int b = 0; b < placedColliders.Count; b++)
+                {
+                    if (spheresOverlap(placedColliders[b], seed.gameObject.GetComponent<SphereCollider>()))
+                        goto redo;
+                }
+                placedColliders.Add(seed.gameObject.GetComponent<SphereCollider>());
+            }
+        }
+    }
 
-	void colorSeeds()
+    bool spheresOverlap(SphereCollider a, SphereCollider b)
+    {
+        float dist = Vector3.Distance(a.transform.localPosition, b.transform.localPosition);
+        return dist < a.radius + b.radius;
+    }
+
+    void colorSeeds()
     {
 		for (int i = 0; i < 98; i++)
         {
@@ -191,6 +230,26 @@ public class BORDGAEMXD : MonoBehaviour
 		}
 	}
 
+	void playHole(int hole)
+	{
+        int a = UnityEngine.Random.Range(1, 5);
+        Audio.PlaySoundAtTransform("sound" + a.ToString(), transform);
+        playAturn(hole, false);
+        int rng;
+        do rng = UnityEngine.Random.Range(getBoundsFromPlayer(true, false), getBoundsFromPlayer(false, true));//Machine playing
+        while (seeds[rng] <= 0);
+        playAturn(rng, true);
+        Array.Copy(seeds, initialState, seeds.Length);//Copying new state as initial
+        positionSeeds();//Repositioning seeds
+		if (!moduleSolved)
+		{
+            logArray(seeds, "Initial state:");
+            Array.Copy(getTheMost(), mostSeeds, mostSeeds.Length);
+            logArray(mostSeeds, "Total points after playing each hole:");
+            Debug.LogFormat("[Congkak #{0}] The maximum seeds in a hole is: {1}, which is in the hole: {2}.", moduleId, mostSeeds.Max(), ((Array.IndexOf(mostSeeds, mostSeeds.Max())) + 1));
+        }
+    }
+
 	void getTotalPts (int hn, int[] result)
 	{
 		for (int i = 0; i < 7; i++)
@@ -211,27 +270,75 @@ public class BORDGAEMXD : MonoBehaviour
 			if (mostSeeds[hole] == mostSeeds.Max())
 			{
 				moduleSolved = true;
-				Debug.LogFormat("[Congkak #{0}] You selected the correct hole. Module solved.", moduleId);
-				Module.HandlePass();
+				Debug.LogFormat("[Congkak #{0}] You selected the correct hole (Hole #{1}), which returns the maximum of {2} seeds. Module solved.", moduleId, hole + 1, mostSeeds[hole]);
+                screenText.text = "GG";
+				playHole(hole);
+                Module.HandlePass();
 			}
+			else if (initialState[hole] != 0)
+			{
+                if (initialState[hole] == initialState[Array.IndexOf(mostSeeds, mostSeeds.Where(x => x != 0).Min())])
+				{
+                    Debug.LogFormat("[Congkak #{0}] You selected the wrong hole (Hole #{1}), which returns the minimum of {2} seeds. Strike, and game continues.", moduleId, hole + 1, mostSeeds[hole]);
+                    Module.HandleStrike();
+                }
+				else
+				{
+                    Debug.LogFormat("[Congkak #{0}] You selected the wrong hole (Hole #{1}), which returns {2} seeds. Game continues.", moduleId, hole + 1, mostSeeds[hole]);
+                }
+                playHole(hole);
+            }
 			else
 			{
-				Debug.LogFormat("[Congkak #{0}] You selected the wrong hole. Strike.", moduleId);
-				Module.HandleStrike();
-			}
-		}
+                Debug.LogFormat("[Congkak #{0}] You selected an empty hole (Hole #{1}). Strike.", moduleId, hole + 1);
+                Module.HandleStrike();
+            }
+        }
 		else
 			Debug.LogFormat(funnyPhrases[UnityEngine.Random.Range(0, funnyPhrases.Length)]);
 	}
 
-	//twitch plays
+	void highlightText(int hole, bool isHighlight)
+	{
+		if (isHighlight)
+		{
+            screenText.text = initialState[hole].ToString("00");
+        }
+		else
+		{
+            screenText.text = "";
+        }
+    }
+
+    //twitch plays
 	#pragma warning disable 414
-	private readonly string TwitchHelpMessage = @"!{0} hole <#> [Chooses the hole in the specified position '#' from bottom-right to top-left (1-7)]";
+    private readonly string TwitchHelpMessage = @"!{0} hole <#> [Chooses the hole in the specified position '#' from bottom-right to top-left (1-7)], !{0} highlight <#> [Highlights the hole in specified position '#' from bottom-right going clockwise around the board disregarding big holes (1-15)], !{0} cycle [Highlights each hole from bottom-right going clockwise disregarding big holes]" ;
 	#pragma warning restore 414
 	IEnumerator ProcessTwitchCommand(string command)
 	{
-		string[] parameters = command.Split(' ');
-		if (Regex.IsMatch(parameters[0], @"^\s*hole\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        string[] parameters = command.Split(' ');
+        if (Regex.IsMatch(command, @"^\s*cycle\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+		{
+			yield return null;
+            var waitTime = 0.9f;
+            for (int i = 0; i < yourHoles.Length; i++)
+            {
+                yield return "trycancel";
+                yourHoles[i].OnHighlight();
+                yield return new WaitForSeconds(waitTime);
+                yourHoles[i].OnHighlightEnded();
+                yield return new WaitForSeconds(0.1f);
+            }
+            for (int i = 0; i < theirHoles.Length; i++)
+            {
+                yield return "trycancel";
+                theirHoles[i].OnHighlight();
+                yield return new WaitForSeconds(waitTime);
+                theirHoles[i].OnHighlightEnded();
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+		else if (Regex.IsMatch(parameters[0], @"^\s*hole\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
 		{
 			yield return null;
 			if (parameters.Length > 2)
@@ -259,7 +366,49 @@ public class BORDGAEMXD : MonoBehaviour
 			}
 			yield break;
 		}
-	}
+        else if (Regex.IsMatch(parameters[0], @"^\s*highlight\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            yield return null;
+            if (parameters.Length > 2)
+            {
+                yield return "sendtochaterror Too many parameters!";
+            }
+            else if (parameters.Length == 2)
+            {
+                int temp = -1;
+                if (!int.TryParse(parameters[1], out temp))
+                {
+                    yield return "sendtochaterror The specified position '" + parameters[1] + "' is invalid!";
+                    yield break;
+                }
+                if (temp < 1 || temp > 15)
+                {
+                    yield return "sendtochaterror The specified position '" + parameters[1] + "' is out of range 1-7!";
+                    yield break;
+                }
+				if (temp < 8)
+				{
+                    yourHoles[temp - 1].OnHighlight();
+                    yield return new WaitForSeconds(0.9f);
+                    yourHoles[temp - 1].OnHighlightEnded();
+                    yield return new WaitForSeconds(0.1f);
+                }
+				else
+				{
+                    theirHoles[temp - 9].OnHighlight();
+                    yield return new WaitForSeconds(0.9f);
+                    theirHoles[temp - 9].OnHighlightEnded();
+                    yield return new WaitForSeconds(0.1f);
+                }
+
+            }
+            else if (parameters.Length == 1)
+            {
+                yield return "sendtochaterror Please specify the position of the hole you wish to choose!";
+            }
+            yield break;
+        }
+    }
 
 	IEnumerator TwitchHandleForcedSolve()
 	{
