@@ -116,8 +116,7 @@ public class BORDGAEMXD : MonoBehaviour
 			turn = !turn;
 		}
 		Array.Copy(seeds, initialState, seeds.Length);
-
-		colorSeeds();
+        colorSeeds();
 		positionSeeds();
 	}
 
@@ -207,8 +206,8 @@ public class BORDGAEMXD : MonoBehaviour
 		int[] bounds = { getBoundsFromPlayer(turn, false), getBoundsFromPlayer(turn, true), getBoundsFromPlayer(!turn, false), getBoundsFromPlayer(!turn, true) };
 		// = {lower bound from current player, upper bound from current player, lower bound from the opponent, upper bound from the opponent}
 
-		while (!(hn == bounds[1] || seeds[hn] == 1))
-		{// When last seed lands on player's store or in an empty hole
+		do
+		{
 			int hold = seeds[hn];
 			seeds[hn] = 0;
 			for (; hold > 0; hold--)
@@ -228,9 +227,11 @@ public class BORDGAEMXD : MonoBehaviour
 				break;
 			}
 		}
-	}
+		while (!(hn == bounds[1] || seeds[hn] == 1));// When last seed lands on player's store or in an empty hole
 
-	void playHole(int hole)
+    }
+
+    void playHole(int hole)
 	{
         int a = UnityEngine.Random.Range(1, 5);
         Audio.PlaySoundAtTransform("sound" + a.ToString(), transform);
@@ -245,7 +246,7 @@ public class BORDGAEMXD : MonoBehaviour
 		{
             logArray(seeds, "Initial state:");
             Array.Copy(getTheMost(), mostSeeds, mostSeeds.Length);
-            logArray(mostSeeds, "Total points after playing each hole:");
+            logArray(mostSeeds, "Total points gained after playing each hole:");
             Debug.LogFormat("[Congkak #{0}] The maximum seeds in a hole is: {1}, which is in the hole: {2}.", moduleId, mostSeeds.Max(), ((Array.IndexOf(mostSeeds, mostSeeds.Max())) + 1));
         }
     }
@@ -254,7 +255,7 @@ public class BORDGAEMXD : MonoBehaviour
 	{
 		for (int i = 0; i < 7; i++)
 			result[hn] += seeds[i];
-		result[hn] += seeds[seeds.Length - 1];
+		result[hn] += seeds[seeds.Length - 1] - initialState[seeds.Length - 1];
 		if (codeLogging) Debug.LogFormat("[Congkak #{0}] Points gained if the player played this hole: {1} with value {2}", moduleId, result[hn], initialState[hn]);
 	}
 
