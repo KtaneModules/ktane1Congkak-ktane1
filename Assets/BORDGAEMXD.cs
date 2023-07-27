@@ -87,7 +87,7 @@ public class BORDGAEMXD : MonoBehaviour
         distribute();
 		logArray(seeds, "Initial state:");
 		Array.Copy(getTheMost(), mostSeeds, mostSeeds.Length);
-		logArray(mostSeeds, "Total points after playing each hole:");
+		logArray(mostSeeds, "Total points gained after playing each hole (sum of seeds in player's holes + extra seeds in the store, if any):");
 		Debug.LogFormat("[Congkak #{0}] The maximum seeds in a hole is: {1}, which is in the hole: {2}.", moduleId, mostSeeds.Max(), ((Array.IndexOf(mostSeeds, mostSeeds.Max())) + 1));
 	}
 
@@ -115,6 +115,8 @@ public class BORDGAEMXD : MonoBehaviour
 			playAturn(rng, turn);
 			turn = !turn;
 		}
+		//In case for any potential error cases
+		//seeds = new int[] { 2, 3, 1, 1, 0, 4, 0, 31, 0, 4, 0, 1, 0, 1, 2, 48, };
 		Array.Copy(seeds, initialState, seeds.Length);
         colorSeeds();
 		positionSeeds();

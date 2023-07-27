@@ -18,6 +18,6 @@ MonoBehaviour:
     board game Mancala.\nInitially for the KTaNE modding jam #1.\n\nSpecial thanks
     to M\xE1sQu\xE9\xC9lite, Flamanis and eXish for the help in development of the
     module.\n\nMod ID: congkakMQEktane1\nManual Link: https://ktane.timwi.de/HTML/Congkak.html"
-  version: 1.0.1
+  version: 1.0.2
   outputFolder: C:\Users\HP\Desktop\JOVAN STUFF\Modding mods\Published Modules\Congkak\ktane1Congkak\build
   previewImage: {fileID: 2800000, guid: 1fd3b7a57b2990349b8339607435c968, type: 3}
