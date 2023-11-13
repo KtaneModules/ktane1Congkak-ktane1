@@ -315,7 +315,7 @@ public class BORDGAEMXD : MonoBehaviour
 
     //twitch plays
 	#pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} hole <#> [Chooses the hole in the specified position '#' from bottom-right to top-left (1-7)], !{0} highlight <#> [Highlights the hole in specified position '#' from bottom-right going clockwise around the board disregarding big holes (1-15)], !{0} cycle [Highlights each hole from bottom-right going clockwise disregarding big holes]" ;
+    private readonly string TwitchHelpMessage = @"!{0} hole <#> [Chooses the hole in the specified position '#' from bottom-right to top-left (1-7)], !{0} highlight <#> [Highlights the hole in specified position '#' from bottom-right going clockwise around the board disregarding big holes (1-14)], !{0} cycle [Highlights each hole from bottom-right going clockwise disregarding big holes]" ;
 	#pragma warning restore 414
 	IEnumerator ProcessTwitchCommand(string command)
 	{
@@ -398,9 +398,9 @@ public class BORDGAEMXD : MonoBehaviour
                 }
 				else
 				{
-                    theirHoles[temp - 9].OnHighlight();
+                    theirHoles[temp - 8].OnHighlight();
                     yield return new WaitForSeconds(0.9f);
-                    theirHoles[temp - 9].OnHighlightEnded();
+                    theirHoles[temp - 8].OnHighlightEnded();
                     yield return new WaitForSeconds(0.1f);
                 }
 
